@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-
+#include <cstdlib>
+#include <string>
 
 int main()
 {
@@ -24,18 +25,56 @@ int main()
 
     // Open a file for reading
     f = fopen("/data.txt", "r");
-    if (f) {
-        char buffer[100];
-        // Read data
-        if (fgets(buffer, sizeof(buffer), f)) {
-            printf("Read: %s", buffer);
-        }
-        // Close the file
-        fclose(f);
-    }
-
-    while (true) 
+    if (f) 
     {
-        sleep_ms(1000);
+        
+        fseek(f, 0, SEEK_END);
+        long length = ftell(f);
+        rewind(f);  // Go back to beginning
+
+
+        if (length <= 0) 
+        {
+            fclose(f);
+            printf("Length was 0\n");
+            return -1;
+        }
+
+
+        // Allocate buffer (+1 if you want to null-terminate)
+        char* buffer = (char*)malloc(length + 1);
+        if (!buffer) 
+        {
+            perror("Failed to allocate memory");
+            fclose(f);
+            return -1;
+        }
+
+      
+        
+        // Read into buffer
+        size_t readCount = fread(buffer, 1, length, f);
+        fclose(f);
+
+        if (readCount != length) 
+        {
+            free(buffer);
+            fprintf(stderr, "Incomplete read\n");
+            return -1;
+        }
+
+        buffer[length] = '\0';  // Null-terminate if you're treating it as a string
+
+        auto result = std::string(buffer);
+
+        free(buffer);
+
+        printf("Read result:\n");
+        printf(result.c_str());
+
+        while (true) 
+        {
+            sleep_ms(1000);
+        }
     }
 }
